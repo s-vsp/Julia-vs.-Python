@@ -5,11 +5,12 @@ import tensorflow as tf
 import sys
 import io
 from tensorflow import keras
-from tensorflow.keras.layers import LSTM, Flatten, Dense, Activation
+from tensorflow.keras.layers import LSTM, Flatten, Dense, Activation, Dropout
 from tensorflow.keras.callbacks import ModelCheckpoint
 from tensorflow.python.training.tracking.util import Checkpoint
 
 """
+Many-to-many  sort of sequence data proceeding.
 Long Short Term Memory Recurrent Neural Network to create $uicideBoy$ songs' titles.
 
 """
@@ -35,7 +36,7 @@ def text_slicer(data,col):
     return data
 
 
-#def text_samples_generator(text_file, temp_sequence):
+def text_samples_generator(text_file, temp_sequence):
     # Creating the labeled samples from a text file
     """
     Parameters:
@@ -56,9 +57,11 @@ def text_slicer(data,col):
         X.append([char_map_to_int[char] for char in samples])
         y.append(char_map_to_int[target])
     
-    return X, y
+    return np.array(X), np.array(y)
 
-def text_samples_generator(text_file, batch_size, steps):
+
+
+def generator_text(text_file, batch_size, steps):
     # Creating the labeled samples from a text file
     """
     Parameters:
@@ -71,6 +74,7 @@ def text_samples_generator(text_file, batch_size, steps):
     char_map_to_int = {char: integer for integer, char in enumerate(chars)}
 
     text_as_ints = np.array([char_map_to_int[char] for char in text_file])
+
     total_batches_length = batch_size * steps
     number_of_batches = int(len(text_file) / total_batches_length)
 
@@ -102,17 +106,17 @@ def batch_split(X, y, steps):
 
 class LSTM_RNN(object):
 
-    def __init__(self, num_classes, batch_size=64, num_steps=30, lstm_size=256, num_layers=1, learning_rate=0.0001, keep_prob=0.5, grad_clip=5, sampling=False) -> None:
+    def __init__(self, num_classes, batch_size=64, steps=30, lstm_size=256, num_layers=1, learning_rate=0.0001, keep_prob=0.5, grad_clip=5, sampling_mode=False) -> None:
         self.num_classes = num_classes
         self.batch_size= batch_size
-        self.num_steps = num_steps
+        self.steps = steps
         self.lstm_size = lstm_size
         self.num_layers = num_layers
         self.learning_rate = learning_rate
         self.keep_prob = keep_prob
         self.grad_clip = grad_clip
 
-        self.graph = tf.Graph():
+        self.graph = tf.Graph()
         with self.graph.as_default():
 
             #sampling defining whether the graph is destinated to work through the process of learning or sampling
@@ -120,14 +124,22 @@ class LSTM_RNN(object):
             self.build(sampling=sampling)
             self.saver = tf.train.Saver()
             self.init_op = tf.compat.v1.global_variables_initializer()
-    
+
+
+    def build(self, sampling_mode):
+
+        if sampling_mode==True:
+            batch_size = 1
+            steps = 1
+        elif sampling_mode==False:
+            batch_size = self.batch_size
+            steps = self.steps
+        
+
 
     
 
-
-
-
-#def run():
+def text_process(): 
 
     ### Text preprocessing ###
 
@@ -145,33 +157,38 @@ class LSTM_RNN(object):
             file.write('%s\n' % i)
     
     titles = open("SB_titles_text_file.txt", "r", encoding="utf-8").read().lower()
-    
-    # Getting all the chars used in titles as a sorted list
-    chars = sorted(list(set(titles)))
 
-    int_map_to_char = {integer: char for integer, char in enumerate(chars)}
+    seq = 40
+    X, y = text_samples_generator(titles, seq)
     
-    # Generating the samples
-    temp_seq = 50
-    X, y = text_samples_generator(titles,temp_seq)
-
     # Reshaping samples (X) to be suitable for a LSTM RNN
-    X = np.reshape(X, (len(X), temp_seq, 1))
+    X = np.reshape(X, (len(X), seq, 1))
 
-    # Categorical one-hot encoding class labels
+    # Categorical one-hot encoding
     y = tf.keras.utils.to_categorical(y)
 
+    return X, y
+
+
+
+def run_model_train(X, y):
 
     ### Creating the model ###
 
+    adam_opt = keras.optimizers.Adam(learning_rate=0.0001)
+
     model = keras.Sequential()
-    model.add(LSTM(256, input_shape=(X.shape[1], X.shape[2]), activation="tanh", return_sequences=True)) # Output shape = (None, 20, 256)
-    for i in range(1,5):
+    model.add(LSTM(256, input_shape=(X.shape[1], X.shape[2]), activation="tanh", return_sequences=True)) 
+    for i in range(1,4): # adding 3 hidden layers
         model.add(LSTM(256, activation="tanh", return_sequences=True))
-    model.add(Flatten()) # Output shape = (None, 5120)
-    model.add(Dense(y.shape[1])) # Output shape = (None, 46)
+        if i == 2:
+            model.add(Dropout(0.2)) ### ADDING DROPOUT LAYER ###
+
+    model.add(Flatten()) 
+    model.add(Dense(y.shape[1])) 
     model.add(Activation("softmax"))
-    model.compile(optimizer="adam", loss="categorical_crossentropy")
+    model.add(Dropout(0.5))
+    model.compile(optimizer=adam_opt, loss="categorical_crossentropy")
 
     print(model.summary())
 
@@ -180,68 +197,18 @@ class LSTM_RNN(object):
     checkpoint = ModelCheckpoint(path, monitor="loss", verbose=1, mode="min", save_best_only=True)
     callbacks = [checkpoint]
     
-
-
     ### Training ###
 
-    model.fit(X, y, batch_size=32, epochs=30, verbose=1, callbacks=callbacks, validation_split=0.2, validation_data=None, shuffle=True, initial_epoch=0)
-    
-    weights = "LSTM-RNN-model-weights-improvement-20-2.88230-bigger.hdf5"
-    model.load_weights(weights)
-    model.compile(optimizer="adam", loss="categorical_crossentropy")
+    model.fit(X, y, batch_size=16, epochs=20, verbose=1, callbacks=callbacks, validation_split=0.2, validation_data=None, shuffle=True, initial_epoch=0)
 
-    t = np.random.randint(0, len(X)-1)
-    s = X[t]
-    s = np.reshape(s, (temp_seq,))
-
-    #print(''.join([int_map_to_char[value] for value in s]))
-
-    s = list(s)
-
-    print("------------------------------------------")
-    # Generate Charachters :
-    for i in range(10):
-        x = np.reshape(s, ( 1, len(s), 1))
-        prediction = model.predict(x, verbose = 0)
-        index = np.argmax(prediction)
-        result = int_map_to_char[index]
-        #seq_in = [int_chars[value] for value in pattern]
-        sys.stdout.write(result)
-        s.append(index)
-        s = s[1:len(s)]
-    print("\n------------------------------------------")
-
-    print(len(s))
-
-def run():
-
-    ### Text preprocessing ###
-
-    songs_list = pd.read_csv("SB_songs_list.csv", header=None, names=["Title"])
-    text_slicer(songs_list, "Title")
-
-    titles_list = [] # Creating a list containing the titles
-
-    for song in songs_list["Title"]:
-        titles_list.append(song)
-    
-    # Creating a text file with the titles
-    with open('SB_titles_text_file.txt', 'w', encoding="utf-8") as file:  
-        for i in titles_list:
-            file.write('%s\n' % i)
-    
-    titles = open("SB_titles_text_file.txt", "r", encoding="utf-8").read().lower()
-
-    print(len(titles))    
-    X, y = text_samples_generator(titles, 16, 10)
-
-    print(list(batch_split(X, y, 10)))
-
-
-
-
+    return model
 
 
 if __name__ == "__main__":
-    run()
+
+    X, y = text_process()
+    model = run_model_train(X, y)
+
+    
+    
     
