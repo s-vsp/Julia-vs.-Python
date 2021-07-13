@@ -91,7 +91,7 @@
 
 
 
-    weights = "LSTM-RNN-model-weights-improvement-030-2.84220-bigger.hdf5"
+    weights = "LSTM-RNN-model-weights-improvement-004-9.12776-bigger.hdf5"
     model.load_weights(weights)
     model.compile(optimizer="adam", loss="categorical_crossentropy")
 

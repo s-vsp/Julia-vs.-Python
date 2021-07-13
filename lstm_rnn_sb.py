@@ -8,6 +8,7 @@ from tensorflow import keras
 from tensorflow.keras.layers import LSTM, Flatten, Dense, Activation, Dropout
 from tensorflow.keras.callbacks import ModelCheckpoint
 from tensorflow.python.training.tracking.util import Checkpoint
+from tensorflow.keras.optimizers import SGD, Adam
 
 """
 Many-to-many  sort of sequence data proceeding.
@@ -158,7 +159,7 @@ def text_process():
     
     titles = open("SB_titles_text_file.txt", "r", encoding="utf-8").read().lower()
 
-    seq = 40
+    seq = 15
     X, y = text_samples_generator(titles, seq)
     
     # Reshaping samples (X) to be suitable for a LSTM RNN
@@ -175,7 +176,6 @@ def run_model_train(X, y):
 
     ### Creating the model ###
 
-    adam_opt = keras.optimizers.Adam(learning_rate=0.0001)
 
     model = keras.Sequential()
     model.add(LSTM(256, input_shape=(X.shape[1], X.shape[2]), activation="tanh", return_sequences=True)) 
@@ -187,8 +187,8 @@ def run_model_train(X, y):
     model.add(Flatten()) 
     model.add(Dense(y.shape[1])) 
     model.add(Activation("softmax"))
-    model.add(Dropout(0.5))
-    model.compile(optimizer=adam_opt, loss="categorical_crossentropy")
+    model.add(Dropout(0.2))
+    model.compile(optimizer=SGD(learning_rate=0.001, momentum=0.9), loss="categorical_crossentropy")
 
     print(model.summary())
 
@@ -199,7 +199,7 @@ def run_model_train(X, y):
     
     ### Training ###
 
-    model.fit(X, y, batch_size=16, epochs=20, verbose=1, callbacks=callbacks, validation_split=0.2, validation_data=None, shuffle=True, initial_epoch=0)
+    model.fit(X, y, batch_size=32, epochs=5, verbose=1, callbacks=callbacks, validation_split=0.2, validation_data=None, shuffle=True, initial_epoch=0)
 
     return model
 
@@ -207,8 +207,9 @@ def run_model_train(X, y):
 if __name__ == "__main__":
 
     X, y = text_process()
-    model = run_model_train(X, y)
+    #model = run_model_train(X, y)
+    print(X.shape, y.shape)
 
-    
+
     
     
