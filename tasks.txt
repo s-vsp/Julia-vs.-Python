@@ -2,3 +2,4 @@
 2. In case of overfitting perform Dropout Regularization with e.g. 0.5/0.2
 3. Change the batch size (smaller / larger ?)
 4. Different "seq" value --> larger (than 100)
+5. Different approach on data cleaning and proceeding
