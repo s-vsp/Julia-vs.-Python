@@ -1,0 +1,4 @@
+1. Train through the larger number of epochs, e.g. ~100
+2. In case of overfitting perform Dropout Regularization with e.g. 0.5/0.2
+3. Change the batch size (smaller / larger ?)
+4. Different "seq" value --> larger (than 100)

@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 import tensorflow as tf
-#import h5py
+import h5py
 import sys
 import io
 from tensorflow import keras
@@ -11,7 +11,7 @@ from tensorflow.python.training.tracking.util import Checkpoint
 from tensorflow.keras.optimizers import SGD, Adam
 
 """
-Many-to-many  sort of sequence data proceeding.
+Many-to-many sort of sequence data proceeding.
 Long Short Term Memory Recurrent Neural Network to create $uicideBoy$ songs' titles.
 
 """
@@ -35,6 +35,7 @@ def text_slicer(data,col):
         elif i >= 99:
             song[col] = song[col][5:]
     return data
+
 
 
 def text_samples_generator(text_file, temp_sequence):
@@ -159,7 +160,7 @@ def text_process():
     
     titles = open("SB_titles_text_file.txt", "r", encoding="utf-8").read().lower()
 
-    seq = 15
+    seq = 100
     X, y = text_samples_generator(titles, seq)
     
     # Reshaping samples (X) to be suitable for a LSTM RNN
@@ -179,15 +180,11 @@ def run_model_train(X, y):
 
     model = keras.Sequential()
     model.add(LSTM(256, input_shape=(X.shape[1], X.shape[2]), activation="tanh", return_sequences=True)) 
-    for i in range(1,4): # adding 3 hidden layers
-        model.add(LSTM(256, activation="tanh", return_sequences=True))
-        if i == 2:
-            model.add(Dropout(0.2)) ### ADDING DROPOUT LAYER ###
-
+    model.add(LSTM(256, activation="tanh", return_sequences=True)) # hidden layer
     model.add(Flatten()) 
     model.add(Dense(y.shape[1])) 
     model.add(Activation("softmax"))
-    model.add(Dropout(0.2))
+    #model.add(Dropout(0.5))
     model.compile(optimizer=SGD(learning_rate=0.001, momentum=0.9), loss="categorical_crossentropy")
 
     print(model.summary())
@@ -199,7 +196,44 @@ def run_model_train(X, y):
     
     ### Training ###
 
-    model.fit(X, y, batch_size=32, epochs=5, verbose=1, callbacks=callbacks, validation_split=0.2, validation_data=None, shuffle=True, initial_epoch=0)
+    model.fit(X, y, batch_size=32, epochs=30, verbose=1, callbacks=callbacks, validation_split=0.2, validation_data=None, shuffle=True, initial_epoch=0)
+
+    ### Evaluation ###
+
+    titles = open("SB_titles_text_file.txt", "r", encoding="utf-8").read().lower()
+
+    """
+    weights = "LSTM-RNN-model-weights-improvement-020-2.87620-bigger.hdf5"
+    model.load_weights(weights)
+    model.compile(optimizer=SGD(learning_rate=0.001, momentum=0.9), loss="categorical_crossentropy")
+
+    seq = 100
+
+    t = np.random.randint(0, len(X)-1)
+    s = X[t]
+    s = np.reshape(s, (seq,))
+
+    chars = sorted(list(set(titles)))
+    int_map_to_char = {integer: char for integer, char in enumerate(chars)}
+
+    print(''.join([int_map_to_char[value] for value in s]))
+
+    s = list(s)
+
+    print("------------------------------------------")
+
+    # Generate Charachters :
+    for i in range(50):
+        x = np.reshape(s, ( 1, len(s), 1))
+        prediction = model.predict(x, verbose = 0)
+        index = np.argmax(prediction)
+        result = int_map_to_char[index]
+        #seq_in = [int_chars[value] for value in pattern]
+        sys.stdout.write(result)
+        s.append(index)
+        s = s[1:len(s)]
+    print("\n------------------------------------------")
+    """
 
     return model
 
@@ -207,8 +241,9 @@ def run_model_train(X, y):
 if __name__ == "__main__":
 
     X, y = text_process()
-    #model = run_model_train(X, y)
-    print(X.shape, y.shape)
+    model = run_model_train(X, y)
+
+
 
 
     
