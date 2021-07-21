@@ -166,6 +166,9 @@ def text_process():
     # Reshaping samples (X) to be suitable for a LSTM RNN
     X = np.reshape(X, (len(X), seq, 1))
 
+    # Normalize
+    X = X / len(sorted(list(set(titles)))) # dividing by the number of uniqe characters in text
+
     # Categorical one-hot encoding
     y = tf.keras.utils.to_categorical(y)
 
@@ -184,7 +187,7 @@ def run_model_train(X, y):
     model.add(Flatten()) 
     model.add(Dense(y.shape[1])) 
     model.add(Activation("softmax"))
-    #model.add(Dropout(0.5))
+    #model.add(Dropout(0.2))
     model.compile(optimizer=SGD(learning_rate=0.001, momentum=0.9), loss="categorical_crossentropy")
 
     print(model.summary())
@@ -196,7 +199,7 @@ def run_model_train(X, y):
     
     ### Training ###
 
-    model.fit(X, y, batch_size=32, epochs=30, verbose=1, callbacks=callbacks, validation_split=0.2, validation_data=None, shuffle=True, initial_epoch=0)
+    model.fit(X, y, batch_size=32, epochs=100, verbose=1, callbacks=callbacks, validation_split=0.2, validation_data=None, shuffle=True, initial_epoch=0)
 
     ### Evaluation ###
 
