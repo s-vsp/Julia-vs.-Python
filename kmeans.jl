@@ -57,3 +57,10 @@ scatter(X[:,1], X[:,2], color="navy")
 for centroid=1:size(cents)[1]
     scatter(cents[centroid,1], cents[centroid,2], color="red")
 end
+
+figure()
+title("Clustering")
+for (centroid, cluster, color) in zip(1:size(cents)[1], 1:size(cents)[1], ["thistle", "black", "gold", "lightblue"])
+    scatter(X[findall(==(cluster), clusts),1], X[findall(==(cluster), clusts),2], color=color)
+    scatter(cents[centroid,1], cents[centroid,2], color="red", marker="x")
+end
