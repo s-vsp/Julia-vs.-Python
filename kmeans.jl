@@ -52,11 +52,13 @@ end
 
 cents, cluts = k_means_clustering(X, 4, 5)
 
+
 figure()
 scatter(X[:,1], X[:,2], color="navy")
 for centroid=1:size(cents)[1]
     scatter(cents[centroid,1], cents[centroid,2], color="red")
 end
+
 
 figure()
 title("Clustering")
