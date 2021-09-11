@@ -8,5 +8,9 @@ using CSV;
 using DataFrames;
 using ScikitLearn;
 
-X = [1 2 3; 3 2 1; 1 2 3; 3 2 1];
-print(X)
+Random.seed!(110)
+
+data = CSV.read("C:\\Users\\Kamil\\My_repo\\OTHER-WAY\\blobs.csv", DataFrame);
+df = Matrix(data);
+X = df[:, 1:2];
+y = df[:, 3];
