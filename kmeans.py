@@ -56,7 +56,7 @@ if __name__ == "__main__":
     plt.figure(dpi=250)
     plt.title("Clustering")
     for centroid, cluster, color in zip(range(len(cents)), range(len(cents)), ["thistle", "black", "gold", "lightblue"]):
-        plt.scatter(X[:,0][np.where(clusts==cluster)], X[:,1][np.where(clusts==cluster)], color=color, 
+        plt.scatter(X[:,0][clusts==cluster], X[:,1][clusts==cluster], color=color, 
                     label="cluster {}".format(cluster))
         plt.scatter(cents[centroid,0], cents[centroid,1], color="red", marker="x")
     plt.show()
